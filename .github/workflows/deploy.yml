@@ -32,4 +32,4 @@ jobs:
           VIAM_API_KEY: ${{ secrets.VIAM_API_KEY }}
         run: |
           echo "Uploading module with version ${{ github.event.release.tag_name || 'dev' }}"
-          viam module upload --version ${{ github.event.release.tag_name || 'dev' }} --platform linux/arm64 --public module.tar.gz
+          viam module upload --version ${{ github.event.release.tag_name || 'dev' }} --platform linux/arm64 module.tar.gz
