@@ -31,7 +31,7 @@ jobs:
           VIAM_API_KEY_ID: ${{ secrets.VIAM_API_KEY_ID }}
           VIAM_API_KEY: ${{ secrets.VIAM_API_KEY }}
         run: |
-          echo "$VIAM_API_KEY" | viam login api-key --key-id="$VIAM_API_KEY_ID"
+          viam login api-key --key-id="$VIAM_API_KEY_ID" --key="$VIAM_API_KEY"
 
       - name: Upload module to Viam
         run: |
