@@ -1,0 +1,13 @@
+{
+  "components": [
+    {
+      "name": "my_dht22",
+      "type": "sensor",
+      "model": "viam:dht22-sensor:linux",
+      "attributes": {
+        "pin": 4
+      },
+      "depends_on": []
+    }
+  ]
+}
