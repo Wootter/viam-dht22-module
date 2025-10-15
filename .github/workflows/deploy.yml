@@ -26,6 +26,13 @@ jobs:
       - name: Build module
         run: make module.tar.gz
 
+      - name: Login to Viam CLI
+        env:
+          VIAM_API_KEY_ID: ${{ secrets.VIAM_API_KEY_ID }}
+          VIAM_API_KEY: ${{ secrets.VIAM_API_KEY }}
+        run: |
+          viam login --api-key-id "$VIAM_API_KEY_ID" --api-key "$VIAM_API_KEY"
+
       - name: Upload module to Viam
         env:
           VIAM_API_KEY_ID: ${{ secrets.VIAM_API_KEY_ID }}
