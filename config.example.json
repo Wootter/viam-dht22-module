@@ -3,7 +3,7 @@
     {
       "name": "my_dht22",
       "type": "sensor",
-      "model": "wootter:dht22:sensor",
+      "model": "wootter:dht22-sensor:linux",
       "attributes": {
         "pin": 4
       },
