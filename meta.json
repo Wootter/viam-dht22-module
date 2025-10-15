@@ -9,5 +9,11 @@
       "model": "wootter:dht22-sensor:linux"
     }
   ],
-  "entrypoint": "exec.sh"
+  "entrypoint": "exec.sh",
+  "build": {
+    "setup": "./setup.sh",
+    "build": "make module.tar.gz",
+    "path": "module.tar.gz",
+    "arch": ["linux/arm64", "linux/amd64"]
+  }
 }

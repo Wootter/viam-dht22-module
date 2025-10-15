@@ -1,39 +1,19 @@
 name: Deploy Viam Module
 
 on:
-  release:
-    types: [released]
-  workflow_dispatch:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v3
+      - name: build and publish
+        uses: viamrobotics/build-action@v1
         with:
-          python-version: '3.9'
-
-      - name: Install Viam CLI
-        run: |
-          sudo curl -o /usr/local/bin/viam https://storage.googleapis.com/packages.viam.com/apps/viam-cli/viam-cli-stable-linux-amd64
-          sudo chmod +x /usr/local/bin/viam
-          viam version
-
-      - name: Build module
-        run: make module.tar.gz
-
-      - name: Authenticate with Viam
-        env:
-          VIAM_API_KEY_ID: ${{ secrets.VIAM_API_KEY_ID }}
-          VIAM_API_KEY: ${{ secrets.VIAM_API_KEY }}
-        run: |
-          viam login api-key --key-id="$VIAM_API_KEY_ID" --key="$VIAM_API_KEY"
-
-      - name: Upload module to Viam
-        run: |
-          echo "Uploading module with version ${{ github.event.release.tag_name || 'dev' }}"
-          viam module upload --version ${{ github.event.release.tag_name || 'dev' }} --platform linux/arm64 module.tar.gz
+          version: ${{ github.ref_name }}
+          ref: ${{ github.sha }}
+          key-id: ${{ secrets.VIAM_API_KEY_ID }}
+          key-value: ${{ secrets.VIAM_API_KEY }}
