@@ -5,7 +5,7 @@ from viam.proto.app.robot import ComponentConfig
 from viam.proto.common import ResourceName
 from viam.resource.base import ResourceBase
 from viam.resource.types import Model, ModelFamily
-import Adafruit_DHT
+from .dht import DHT, DHTResult
 import RPi.GPIO as GPIO
 
 
@@ -29,8 +29,8 @@ class MySensor(Sensor):
         """
         super().__init__(name)
         self.pin = pin
-        # DHT22 is also known as AM2302
-        self.sensor_type = Adafruit_DHT.DHT22
+        # Create DHT sensor instance (isDht11=False for DHT22)
+        self.sensor = DHT(pin, isDht11=False)
 
     @classmethod
     def new(cls, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]) -> "MySensor":
@@ -65,18 +65,26 @@ class MySensor(Sensor):
             or an error message if reading fails
         """
         # Read from the DHT22 sensor
-        # Adafruit_DHT.read_retry ensures multiple read attempts for reliability
-        humidity, temperature = Adafruit_DHT.read_retry(self.sensor_type, self.pin)
+        result = self.sensor.read()
         
-        if humidity is not None and temperature is not None:
+        if result.is_valid():
+            temperature = result.temperature
+            humidity = result.humidity
             return {
                 "temperature_celsius": round(temperature, 2),
                 "humidity_percent": round(humidity, 2),
                 "temperature_fahrenheit": round(temperature * 9/5 + 32, 2)
             }
         else:
+            error_messages = {
+                DHTResult.ERR_MISSING_DATA: "Missing data from DHT22 sensor",
+                DHTResult.ERR_CRC: "CRC checksum error from DHT22 sensor",
+                DHTResult.ERR_NOT_FOUND: "DHT22 sensor not responding"
+            }
+            error_msg = error_messages.get(result.error_code, "Unknown error from DHT22 sensor")
             return {
-                "error": "Failed to read from DHT22 sensor",
+                "error": error_msg,
+                "error_code": result.error_code,
                 "pin": self.pin
             }
 
