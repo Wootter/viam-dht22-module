@@ -17,7 +17,7 @@ class MySensor(Sensor):
     """
     
     # Define the model of the sensor
-    MODEL: ClassVar[Model] = Model(ModelFamily("viam", "dht22-sensor"), "linux")
+    MODEL: ClassVar[Model] = Model(ModelFamily("wootter", "dht22-sensor"), "linux")
 
     def __init__(self, name: str, pin: int):
         """

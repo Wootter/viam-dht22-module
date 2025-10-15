@@ -25,9 +25,13 @@ jobs:
       - name: Build module
         run: make module.tar.gz
 
-      - name: Upload module to Viam
+      - name: Authenticate with Viam
         env:
           VIAM_API_KEY_ID: ${{ secrets.VIAM_API_KEY_ID }}
           VIAM_API_KEY: ${{ secrets.VIAM_API_KEY }}
+        run: |
+          viam login api-key --key-id=$VIAM_API_KEY_ID --key=$VIAM_API_KEY
+
+      - name: Upload module to Viam
         run: |
           viam module upload --version ${{ github.event.release.tag_name || 'dev' }} --platform linux/arm64 module.tar.gz
