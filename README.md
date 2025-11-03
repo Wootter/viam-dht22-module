@@ -44,7 +44,7 @@ The following attributes are available for `wootter:sensor:dht22` sensor:
 
 ```json
 {
-  "pin": 4
+  "pin": 23
 }
 ```
 
