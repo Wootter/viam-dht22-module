@@ -1,5 +1,6 @@
 {
-  "module_id": "wootter:sensor:dht22",
+  "$schema": "https://dl.viam.dev/module.schema.json",
+  "module_id": "wootter:dht22",
   "visibility": "public",
   "url": "https://github.com/Wootter/viam-dht22-module",
   "description": "A Viam module for the DHT22 temperature and humidity sensor on Raspberry Pi",
