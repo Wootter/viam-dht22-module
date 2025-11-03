@@ -1,13 +1,13 @@
 {
   "components": [
     {
-      "name": "my_dht22",
+      "name": "dht22",
+      "model": "wootter:sensor:dht22",
       "type": "sensor",
-      "model": "wootter:dht22-sensor:linux",
+      "namespace": "rdk",
       "attributes": {
         "pin": 4
-      },
-      "depends_on": []
+      }
     }
   ]
 }

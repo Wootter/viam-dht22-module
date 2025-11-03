@@ -1,2 +1,2 @@
-viam-sdk>=0.4.0
+viam-sdk
 RPi.GPIO

@@ -1,5 +1,20 @@
+from typing import ClassVar, Mapping, Any, Optional
+from typing_extensions import Self
+
+from viam.module.types import Reconfigurable
+from viam.proto.app.robot import ComponentConfig
+from viam.proto.common import ResourceName
+from viam.resource.base import ResourceBase
+from viam.resource.types import Model, ModelFamily
+
+from viam.components.sensor import Sensor
+from viam.logging import getLogger
+
 import time
 import RPi.GPIO as GPIO
+
+LOGGER = getLogger(__name__)
+
 
 class DHTResult:
     ERR_NO_ERROR = 0
@@ -22,40 +37,31 @@ class DHT:
         self.__isDht11 = isDht11
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.__pin, GPIO.OUT)  # Set the pin as output initially
+        GPIO.setup(self.__pin, GPIO.OUT)
 
     def read(self):
-        GPIO.setup(self.__pin, GPIO.OUT)  # Ensure the pin is set up as OUTPUT before sending HIGH/LOW signal.
-
-        # Send start signal
+        GPIO.setup(self.__pin, GPIO.OUT)
         self.__send_and_sleep(GPIO.HIGH, 0.05)
         self.__send_and_sleep(GPIO.LOW, 0.02)
-        GPIO.setup(self.__pin, GPIO.IN, GPIO.PUD_UP)  # Switch pin to input mode for reading
+        GPIO.setup(self.__pin, GPIO.IN, GPIO.PUD_UP)
 
-        # Collect data
         data = self.__collect_input()
         pull_up_lengths = self.__parse_data_pull_up_lengths(data)
 
-        # If no data collected
         if len(pull_up_lengths) == 0:
             return DHTResult(DHTResult.ERR_NOT_FOUND, 0, 0)
 
-        # If data length is incorrect
         if len(pull_up_lengths) != 40:
             return DHTResult(DHTResult.ERR_MISSING_DATA, 0, 0)
 
-        # Process bits
         bits = self.__calculate_bits(pull_up_lengths)
         the_bytes = self.__bits_to_bytes(bits)
         checksum = self.__calculate_checksum(the_bytes)
 
-        # Checksum mismatch
         if the_bytes[4] != checksum:
             return DHTResult(DHTResult.ERR_CRC, 0, 0)
 
-        # Process temperature and humidity values
         temperature, humidity = self.__process_data(the_bytes)
-
         return DHTResult(DHTResult.ERR_NO_ERROR, temperature, humidity)
 
     def __send_and_sleep(self, output, sleep):
@@ -87,23 +93,23 @@ class DHT:
 
         for current in data:
             current_length += 1
-            if state == 1:  # INIT_PULL_DOWN
+            if state == 1:
                 if current == GPIO.LOW:
-                    state = 2  # INIT_PULL_UP
-            elif state == 2:  # INIT_PULL_UP
+                    state = 2
+            elif state == 2:
                 if current == GPIO.HIGH:
-                    state = 3  # DATA_FIRST_PULL_DOWN
-            elif state == 3:  # DATA_FIRST_PULL_DOWN
+                    state = 3
+            elif state == 3:
                 if current == GPIO.LOW:
-                    state = 4  # DATA_PULL_UP
-            elif state == 4:  # DATA_PULL_UP
+                    state = 4
+            elif state == 4:
                 if current == GPIO.HIGH:
-                    state = 5  # DATA_PULL_DOWN
+                    state = 5
                     current_length = 0
-            elif state == 5:  # DATA_PULL_DOWN
+            elif state == 5:
                 if current == GPIO.LOW:
                     lengths.append(current_length)
-                    state = 4  # DATA_PULL_UP
+                    state = 4
         return lengths
 
     def __calculate_bits(self, pull_up_lengths):
@@ -149,3 +155,69 @@ class DHT:
 
     def cleanup(self):
         GPIO.cleanup()
+
+
+class dht22(Sensor, Reconfigurable):
+    """
+    DHT22 Temperature and Humidity Sensor for Raspberry Pi
+    """
+    MODEL: ClassVar[Model] = Model(ModelFamily("wootter", "sensor"), "dht22")
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.pin = None
+        self.sensor = None
+        LOGGER.info(f"{self.__class__.__name__} initialized.")
+
+    @classmethod
+    def new(cls, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]) -> Self:
+        instance = cls(config.name)
+        instance.reconfigure(config, dependencies)
+        return instance
+
+    @classmethod
+    def validate(cls, config: ComponentConfig):
+        if "pin" not in config.attributes.fields:
+            raise Exception("'pin' must be defined in the configuration.")
+        return
+
+    def reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
+        self.pin = int(config.attributes.fields["pin"].number_value)
+        self.sensor = DHT(self.pin, isDht11=False)
+        LOGGER.info(f"DHT22 reconfigured with GPIO pin: {self.pin}")
+
+    async def get_readings(
+        self, *, extra: Optional[Mapping[str, Any]] = None, timeout: Optional[float] = None, **kwargs
+    ) -> Mapping[str, Any]:
+        """
+        Read temperature and humidity from DHT22 sensor.
+
+        Returns:
+            Mapping[str, Any]: Temperature and humidity readings.
+        """
+        result = self.sensor.read()
+
+        if result.is_valid():
+            temperature = result.temperature
+            humidity = result.humidity
+            
+            LOGGER.info(f"Temperature: {temperature}°C, Humidity: {humidity}%")
+            
+            return {
+                "temperature_celsius": round(temperature, 2),
+                "humidity_percent": round(humidity, 2),
+                "temperature_fahrenheit": round(temperature * 9/5 + 32, 2)
+            }
+        else:
+            error_messages = {
+                DHTResult.ERR_MISSING_DATA: "Missing data from DHT22 sensor",
+                DHTResult.ERR_CRC: "CRC checksum error from DHT22 sensor",
+                DHTResult.ERR_NOT_FOUND: "DHT22 sensor not responding"
+            }
+            error_msg = error_messages.get(result.error_code, "Unknown error")
+            LOGGER.error(f"DHT22 error: {error_msg}")
+            
+            return {
+                "error": error_msg,
+                "error_code": result.error_code
+            }
