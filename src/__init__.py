@@ -7,4 +7,4 @@ from viam.resource.registry import Registry, ResourceCreatorRegistration
 
 from .dht22 import dht22
 
-Registry.register_resource_creator(Sensor.get_resource_name(dht22.MODEL.name), dht22.MODEL, ResourceCreatorRegistration(dht22.new, dht22.validate))
+Registry.register_resource_creator(Sensor.API, dht22.MODEL, ResourceCreatorRegistration(dht22.new, dht22.validate))
