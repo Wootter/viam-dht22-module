@@ -9,6 +9,7 @@ from viam.resource.types import Model, ModelFamily
 
 from viam.components.sensor import Sensor
 from viam.logging import getLogger
+import asyncio # <-- ADDED: Required for non-blocking I/O
 
 import time
 import RPi.GPIO as GPIO
@@ -195,7 +196,8 @@ class dht22(Sensor, Reconfigurable):
         Returns:
             Mapping[str, Any]: Temperature and humidity readings.
         """
-        result = self.sensor.read()
+        # FIX: Use asyncio.to_thread to prevent blocking the event loop
+        result = await asyncio.to_thread(self.sensor.read)
 
         if result.is_valid():
             temperature = result.temperature
@@ -221,3 +223,11 @@ class dht22(Sensor, Reconfigurable):
                 "error": error_msg,
                 "error_code": result.error_code
             }
+
+    async def close(self): # <-- ADDED: Component lifecycle method
+        """
+        Clean up GPIO resources when the module is shut down.
+        """
+        if self.sensor:
+            # FIX: Use asyncio.to_thread to make synchronous cleanup non-blocking
+            await asyncio.to_thread(self.sensor.cleanup)
