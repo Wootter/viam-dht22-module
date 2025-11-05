@@ -12,7 +12,8 @@
   ],
   "entrypoint": "run.sh",
   "build": {
-    "path": ".",
+    "build": "tar -czf module.tar.gz run.sh requirements.txt src",
+    "path": "module.tar.gz",
     "arch": ["linux/arm64", "linux/amd64"]
   }
 }
