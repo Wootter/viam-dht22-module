@@ -196,33 +196,42 @@ class dht22(Sensor, Reconfigurable):
         Returns:
             Mapping[str, Any]: Temperature and humidity readings.
         """
-        # FIX: Use asyncio.to_thread to prevent blocking the event loop
-        result = await asyncio.to_thread(self.sensor.read)
+        # Retry logic: DHT22 sensors often need multiple attempts
+        max_retries = 3
+        retry_delay = 2.0  # seconds between retries
+        
+        for attempt in range(max_retries):
+            # FIX: Use asyncio.to_thread to prevent blocking the event loop
+            result = await asyncio.to_thread(self.sensor.read)
 
-        if result.is_valid():
-            temperature = result.temperature
-            humidity = result.humidity
-            
-            LOGGER.info(f"Temperature: {temperature}°C, Humidity: {humidity}%")
-            
-            return {
-                "temperature_celsius": round(temperature, 2),
-                "humidity_percent": round(humidity, 2),
-                "temperature_fahrenheit": round(temperature * 9/5 + 32, 2)
-            }
-        else:
-            error_messages = {
-                DHTResult.ERR_MISSING_DATA: "Missing data from DHT22 sensor",
-                DHTResult.ERR_CRC: "CRC checksum error from DHT22 sensor",
-                DHTResult.ERR_NOT_FOUND: "DHT22 sensor not responding"
-            }
-            error_msg = error_messages.get(result.error_code, "Unknown error")
-            LOGGER.error(f"DHT22 error: {error_msg}")
-            
-            return {
-                "error": error_msg,
-                "error_code": result.error_code
-            }
+            if result.is_valid():
+                temperature = result.temperature
+                humidity = result.humidity
+                
+                LOGGER.info(f"Temperature: {temperature}°C, Humidity: {humidity}% (attempt {attempt + 1})")
+                
+                return {
+                    "temperature_celsius": round(temperature, 2),
+                    "humidity_percent": round(humidity, 2),
+                    "temperature_fahrenheit": round(temperature * 9/5 + 32, 2)
+                }
+            else:
+                error_messages = {
+                    DHTResult.ERR_MISSING_DATA: "Missing data from DHT22 sensor",
+                    DHTResult.ERR_CRC: "CRC checksum error from DHT22 sensor",
+                    DHTResult.ERR_NOT_FOUND: "DHT22 sensor not responding"
+                }
+                error_msg = error_messages.get(result.error_code, "Unknown error")
+                
+                if attempt < max_retries - 1:
+                    LOGGER.warning(f"DHT22 error on attempt {attempt + 1}/{max_retries}: {error_msg}. Retrying...")
+                    await asyncio.sleep(retry_delay)
+                else:
+                    LOGGER.error(f"DHT22 error after {max_retries} attempts: {error_msg}")
+                    return {
+                        "error": error_msg,
+                        "error_code": result.error_code
+                    }
 
     async def close(self): # <-- ADDED: Component lifecycle method
         """
