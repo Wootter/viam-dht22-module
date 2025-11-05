@@ -180,7 +180,7 @@ class dht22(Sensor, Reconfigurable):
     def validate(cls, config: ComponentConfig):
         if "pin" not in config.attributes.fields:
             raise Exception("'pin' must be defined in the configuration.")
-        return
+        return ([], [])
 
     def reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
         self.pin = int(config.attributes.fields["pin"].number_value)
