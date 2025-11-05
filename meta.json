@@ -10,5 +10,9 @@
       "model": "wootter:sensor:dht22"
     }
   ],
-  "entrypoint": "run.sh"
+  "entrypoint": "run.sh",
+  "build": {
+    "path": ".",
+    "arch": ["linux/arm64", "linux/amd64"]
+  }
 }
