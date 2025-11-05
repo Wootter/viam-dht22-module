@@ -9,7 +9,7 @@ async def main():
     Resources must be pre-registered. For an example, see the `__init__.py` file.
     """
     module = Module.from_args()
-    module.add_model_from_registry(Sensor.SUBTYPE, dht22.MODEL)
+    module.add_model_from_registry(Sensor.API, dht22.MODEL)
     await module.start()
 
 if __name__ == "__main__":
