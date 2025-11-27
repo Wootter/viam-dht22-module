@@ -162,7 +162,7 @@ class dht22(Sensor, Reconfigurable):
     """
     DHT22 Temperature and Humidity Sensor for Raspberry Pi
     """
-    MODEL: ClassVar[Model] = Model(ModelFamily("wootter", "sensor"), "dht22")
+    MODEL: ClassVar[Model] = Model(ModelFamily("wootter", "dht22-sensor"), "linux")
 
     def __init__(self, name: str):
         super().__init__(name)
