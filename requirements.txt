@@ -1,2 +1,3 @@
 viam-sdk
-RPi.GPIO
+adafruit-circuitpython-dht
+board
