@@ -197,8 +197,8 @@ class dht22(Sensor, Reconfigurable):
             Mapping[str, Any]: Temperature and humidity readings.
         """
         # Retry logic: DHT22 sensors often need multiple attempts
-        max_retries = 3
-        retry_delay = 2.0  # seconds between retries
+        max_retries = 5  # Increase retries for flaky sensor
+        retry_delay = 3.0  # Longer delay between retries
         
         for attempt in range(max_retries):
             # FIX: Use asyncio.to_thread to prevent blocking the event loop
