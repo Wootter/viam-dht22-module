@@ -55,7 +55,7 @@ class DHT:
 
 class dht22(Sensor, Reconfigurable):
     """
-    DHT22 Temperature and Humidity Sensor for Raspberry Pi using Adafruit library
+    DHT22 Temperature and Humidity Sensor for Raspberry Pi
     """
     MODEL: ClassVar[Model] = Model(ModelFamily("wootter", "sensor"), "dht22")
 
@@ -79,67 +79,59 @@ class dht22(Sensor, Reconfigurable):
 
     def reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
         self.pin = int(config.attributes.fields["pin"].number_value)
-        self.sensor = DHT(self.pin)
+        self.sensor = DHT(self.pin, isDht11=False)
         LOGGER.info(f"DHT22 reconfigured with GPIO pin: {self.pin}")
 
     async def get_readings(
         self, *, extra: Optional[Mapping[str, Any]] = None, timeout: Optional[float] = None, **kwargs
     ) -> Mapping[str, Any]:
         """
-        Read temperature and humidity from DHT22 sensor using Adafruit library.
+        Read temperature and humidity from DHT22 sensor.
 
         Returns:
             Mapping[str, Any]: Temperature and humidity readings.
         """
         # Retry logic: DHT22 sensors often need multiple attempts
-        max_retries = 5
-        retry_delay = 2.0
+        max_retries = 5  # Increase retries for flaky sensor
+        retry_delay = 3.0  # Longer delay between retries
         
         for attempt in range(max_retries):
-            try:
-                # Use asyncio.to_thread to prevent blocking the event loop
-                result = await asyncio.to_thread(self.sensor.read)
+            # FIX: Use asyncio.to_thread to prevent blocking the event loop
+            result = await asyncio.to_thread(self.sensor.read)
 
-                if result["error"] is None:
-                    temperature = result["temperature"]
-                    humidity = result["humidity"]
-                    
-                    LOGGER.info(f"Temperature: {temperature}°C, Humidity: {humidity}% (attempt {attempt + 1})")
-                    
-                    return {
-                        "temperature_celsius": round(temperature, 2),
-                        "humidity_percent": round(humidity, 2),
-                        "temperature_fahrenheit": round(temperature * 9/5 + 32, 2)
-                    }
-                else:
-                    error_msg = result["error"]
-                    
-                    if attempt < max_retries - 1:
-                        LOGGER.warning(f"DHT22 error on attempt {attempt + 1}/{max_retries}: {error_msg}. Retrying...")
-                        await asyncio.sleep(retry_delay)
-                    else:
-                        LOGGER.error(f"DHT22 error after {max_retries} attempts: {error_msg}")
-                        return {
-                            "error": error_msg,
-                            "temperature_celsius": None,
-                            "humidity_percent": None
-                        }
-            except Exception as e:
-                error_msg = f"Unexpected error: {str(e)}"
+            if result.is_valid():
+                temperature = result.temperature
+                humidity = result.humidity
+                
+                LOGGER.info(f"Temperature: {temperature}°C, Humidity: {humidity}% (attempt {attempt + 1})")
+                
+                return {
+                    "temperature_celsius": round(temperature, 2),
+                    "humidity_percent": round(humidity, 2),
+                    "temperature_fahrenheit": round(temperature * 9/5 + 32, 2)
+                }
+            else:
+                error_messages = {
+                    DHTResult.ERR_MISSING_DATA: "Missing data from DHT22 sensor",
+                    DHTResult.ERR_CRC: "CRC checksum error from DHT22 sensor",
+                    DHTResult.ERR_NOT_FOUND: "DHT22 sensor not responding"
+                }
+                error_msg = error_messages.get(result.error_code, "Unknown error")
+                
                 if attempt < max_retries - 1:
-                    LOGGER.warning(f"DHT22 exception on attempt {attempt + 1}/{max_retries}: {error_msg}. Retrying...")
+                    LOGGER.warning(f"DHT22 error on attempt {attempt + 1}/{max_retries}: {error_msg}. Retrying...")
                     await asyncio.sleep(retry_delay)
                 else:
-                    LOGGER.error(f"DHT22 exception after {max_retries} attempts: {error_msg}")
+                    LOGGER.error(f"DHT22 error after {max_retries} attempts: {error_msg}")
                     return {
                         "error": error_msg,
-                        "temperature_celsius": None,
-                        "humidity_percent": None
+                        "error_code": result.error_code
                     }
 
-    async def close(self):
+    async def close(self): # <-- ADDED: Component lifecycle method
         """
-        Clean up resources when the module is shut down.
+        Clean up GPIO resources when the module is shut down.
         """
         if self.sensor:
+            # FIX: Use asyncio.to_thread to make synchronous cleanup non-blocking
             await asyncio.to_thread(self.sensor.cleanup)

@@ -1,3 +1,4 @@
 viam-sdk
 adafruit-circuitpython-dht
-board
+RPi.GPIO
+adafruit-blinka
