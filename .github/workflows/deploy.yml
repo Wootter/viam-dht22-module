@@ -29,8 +29,7 @@ jobs:
     - name: Login to Viam
       run: viam login api-key --key-id ${{ secrets.VIAM_API_KEY_ID }} --key ${{ secrets.VIAM_API_KEY }}
     
-    - name: Create and upload module
+    - name: Upload module
       run: |
-        viam module create --name dht22 --public-namespace wootter
         viam module upload --version ${{ steps.version.outputs.VERSION }} --platform linux/arm64 --upload .
         viam module upload --version ${{ steps.version.outputs.VERSION }} --platform linux/amd64 --upload .
