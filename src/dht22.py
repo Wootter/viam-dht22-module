@@ -79,7 +79,7 @@ class dht22(Sensor, Reconfigurable):
 
     def reconfigure(self, config: ComponentConfig, dependencies: Mapping[ResourceName, ResourceBase]):
         self.pin = int(config.attributes.fields["pin"].number_value)
-        self.sensor = DHT(self.pin, isDht11=False)
+        self.sensor = DHT(self.pin)
         LOGGER.info(f"DHT22 reconfigured with GPIO pin: {self.pin}")
 
     async def get_readings(
