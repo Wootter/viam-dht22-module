@@ -108,8 +108,7 @@ class dht22(Sensor, Reconfigurable):
                 
                 return {
                     "temperature_celsius": round(temperature, 2),
-                    "humidity_percent": round(humidity, 2),
-                    "temperature_fahrenheit": round(temperature * 9/5 + 32, 2)
+                    "humidity_percent": round(humidity, 2)
                 }
             else:
                 error_msg = result.get("error", "Unknown error")
