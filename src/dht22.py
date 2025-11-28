@@ -40,10 +40,12 @@ class DHT:
             temperature = self.dht_sensor.temperature
             humidity = self.dht_sensor.humidity
             
+            print(f"DEBUG: Raw temperature={temperature}, humidity={humidity}")
+            
             if temperature is not None and humidity is not None:
                 return {"temperature": temperature, "humidity": humidity, "error": None}
             else:
-                return {"temperature": None, "humidity": None, "error": "No data received"}
+                return {"temperature": None, "humidity": None, "error": f"No data received - temp={temperature}, hum={humidity}"}
         except RuntimeError as e:
             return {"temperature": None, "humidity": None, "error": f"RuntimeError: {str(e)}"}
         except Exception as e:
