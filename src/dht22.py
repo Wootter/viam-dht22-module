@@ -24,6 +24,7 @@ class DHT:
             17: board.D17,
             4: board.D4,
             18: board.D18,
+            21: board.D21,
             22: board.D22,
             27: board.D27
         }
@@ -96,12 +97,12 @@ class dht22(Sensor, Reconfigurable):
         retry_delay = 3.0  # Longer delay between retries
         
         for attempt in range(max_retries):
-            # FIX: Use asyncio.to_thread to prevent blocking the event loop
+            # Use asyncio.to_thread to prevent blocking the event loop
             result = await asyncio.to_thread(self.sensor.read)
 
-            if result.is_valid():
-                temperature = result.temperature
-                humidity = result.humidity
+            if result.get("error") is None:
+                temperature = result.get("temperature")
+                humidity = result.get("humidity")
                 
                 LOGGER.info(f"Temperature: {temperature}°C, Humidity: {humidity}% (attempt {attempt + 1})")
                 
@@ -111,12 +112,7 @@ class dht22(Sensor, Reconfigurable):
                     "temperature_fahrenheit": round(temperature * 9/5 + 32, 2)
                 }
             else:
-                error_messages = {
-                    DHTResult.ERR_MISSING_DATA: "Missing data from DHT22 sensor",
-                    DHTResult.ERR_CRC: "CRC checksum error from DHT22 sensor",
-                    DHTResult.ERR_NOT_FOUND: "DHT22 sensor not responding"
-                }
-                error_msg = error_messages.get(result.error_code, "Unknown error")
+                error_msg = result.get("error", "Unknown error")
                 
                 if attempt < max_retries - 1:
                     LOGGER.warning(f"DHT22 error on attempt {attempt + 1}/{max_retries}: {error_msg}. Retrying...")
@@ -124,14 +120,13 @@ class dht22(Sensor, Reconfigurable):
                 else:
                     LOGGER.error(f"DHT22 error after {max_retries} attempts: {error_msg}")
                     return {
-                        "error": error_msg,
-                        "error_code": result.error_code
+                        "error": error_msg
                     }
 
-    async def close(self): # <-- ADDED: Component lifecycle method
+    async def close(self):
         """
         Clean up GPIO resources when the module is shut down.
         """
         if self.sensor:
-            # FIX: Use asyncio.to_thread to make synchronous cleanup non-blocking
+            # Use asyncio.to_thread to make synchronous cleanup non-blocking
             await asyncio.to_thread(self.sensor.cleanup)
